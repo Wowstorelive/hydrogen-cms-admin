@@ -6,7 +6,7 @@ import { RichTextEditor } from './RichTextEditor';
 import { PageBuilder } from './PageBuilder';
 import { TemplateSelector } from './pages/TemplateSelector';
 import toast from 'react-hot-toast';
-import { Plus, Edit, Trash2, Save, X, Eye, Layout, Code } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, Eye, Layout, Code, CheckSquare, Square, MoreHorizontal, Download, Copy, Archive } from 'lucide-react';
 
 export const PagesManager = () => {
   const [isEditing, setIsEditing] = useState(false);
@@ -14,6 +14,8 @@ export const PagesManager = () => {
   const [showPageBuilder, setShowPageBuilder] = useState(false);
   const [builderPage, setBuilderPage] = useState(null);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+  const [selectedPages, setSelectedPages] = useState([]);
+  const [showBulkActions, setShowBulkActions] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     slug: '',
@@ -73,6 +75,77 @@ export const PagesManager = () => {
       toast.error(error.response?.data?.message || 'Failed to delete page');
     },
   });
+
+  // Bulk operations
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids) => {
+      await Promise.all(ids.map(id => cmsAPI.pages.delete(id)));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['pages']);
+      toast.success(`${selectedPages.length} pages deleted`);
+      setSelectedPages([]);
+    },
+    onError: () => toast.error('Failed to delete some pages'),
+  });
+
+  const bulkStatusMutation = useMutation({
+    mutationFn: async ({ ids, status }) => {
+      await Promise.all(ids.map(id => cmsAPI.pages.update(id, { status })));
+    },
+    onSuccess: (_, { status }) => {
+      queryClient.invalidateQueries(['pages']);
+      toast.success(`${selectedPages.length} pages ${status === 'published' ? 'published' : 'set to draft'}`);
+      setSelectedPages([]);
+    },
+    onError: () => toast.error('Failed to update some pages'),
+  });
+
+  const handleSelectPage = (pageId) => {
+    setSelectedPages(prev =>
+      prev.includes(pageId)
+        ? prev.filter(id => id !== pageId)
+        : [...prev, pageId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedPages.length === pages.length) {
+      setSelectedPages([]);
+    } else {
+      setSelectedPages(pages.map(p => p.id));
+    }
+  };
+
+  const handleBulkDelete = () => {
+    if (window.confirm(`Delete ${selectedPages.length} pages? This cannot be undone.`)) {
+      bulkDeleteMutation.mutate(selectedPages);
+    }
+  };
+
+  const handleBulkPublish = () => {
+    bulkStatusMutation.mutate({ ids: selectedPages, status: 'published' });
+  };
+
+  const handleBulkDraft = () => {
+    bulkStatusMutation.mutate({ ids: selectedPages, status: 'draft' });
+  };
+
+  const handleDuplicatePage = async (page) => {
+    try {
+      const newPage = await createMutation.mutateAsync({
+        title: `${page.title} (Copy)`,
+        slug: `${page.slug}-copy-${Date.now()}`,
+        status: 'draft',
+        content: page.content || '',
+        meta_title: page.meta_title || '',
+        meta_description: page.meta_description || '',
+      });
+      toast.success('Page duplicated!');
+    } catch {
+      toast.error('Failed to duplicate page');
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -349,9 +422,57 @@ export const PagesManager = () => {
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow overflow-hidden">
+          {/* Bulk Actions Bar */}
+          {selectedPages.length > 0 && (
+            <div className="bg-blue-50 border-b border-blue-200 px-6 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium text-blue-800">
+                  {selectedPages.length} page{selectedPages.length !== 1 ? 's' : ''} selected
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleBulkPublish}
+                  className="px-3 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition"
+                >
+                  Publish
+                </button>
+                <button
+                  onClick={handleBulkDraft}
+                  className="px-3 py-1.5 bg-yellow-600 text-white text-sm rounded-lg hover:bg-yellow-700 transition"
+                >
+                  Set Draft
+                </button>
+                <button
+                  onClick={handleBulkDelete}
+                  className="px-3 py-1.5 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition"
+                >
+                  Delete
+                </button>
+                <button
+                  onClick={() => setSelectedPages([])}
+                  className="px-3 py-1.5 border border-gray-300 text-gray-700 text-sm rounded-lg hover:bg-white transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-4 py-3 text-left">
+                  <button
+                    onClick={handleSelectAll}
+                    className="p-1 hover:bg-gray-200 rounded transition"
+                  >
+                    {selectedPages.length === pages.length && pages.length > 0 ? (
+                      <CheckSquare className="w-5 h-5 text-blue-600" />
+                    ) : (
+                      <Square className="w-5 h-5 text-gray-400" />
+                    )}
+                  </button>
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Title
                 </th>
@@ -368,7 +489,19 @@ export const PagesManager = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {pages.map((page) => (
-                <tr key={page.id} className="hover:bg-gray-50">
+                <tr key={page.id} className={`hover:bg-gray-50 ${selectedPages.includes(page.id) ? 'bg-blue-50' : ''}`}>
+                  <td className="px-4 py-4">
+                    <button
+                      onClick={() => handleSelectPage(page.id)}
+                      className="p-1 hover:bg-gray-200 rounded transition"
+                    >
+                      {selectedPages.includes(page.id) ? (
+                        <CheckSquare className="w-5 h-5 text-blue-600" />
+                      ) : (
+                        <Square className="w-5 h-5 text-gray-400" />
+                      )}
+                    </button>
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{page.title}</div>
                   </td>
@@ -387,10 +520,10 @@ export const PagesManager = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex items-center justify-end gap-1">
                       <button
                         onClick={() => handleEditCode(page)}
-                        className="p-2 text-gray-900 hover:bg-gray-100 rounded-lg transition"
+                        className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition"
                         title="Edit Code in GitHub"
                       >
                         <Code size={18} />
@@ -408,6 +541,13 @@ export const PagesManager = () => {
                         title="Edit Metadata"
                       >
                         <Edit size={18} />
+                      </button>
+                      <button
+                        onClick={() => handleDuplicatePage(page)}
+                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition"
+                        title="Duplicate Page"
+                      >
+                        <Copy size={18} />
                       </button>
                       <button
                         onClick={() => handleDelete(page.id)}
