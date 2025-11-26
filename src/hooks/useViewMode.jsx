@@ -31,12 +31,18 @@ export function ViewModeProvider({ children }) {
   const toggleStoreMode = useCallback(() => {
     setStoreMode(prev => {
       const newMode = prev === 'hydrogen' ? 'liquid' : 'hydrogen';
-      // Update preview URL based on store mode
-      if (newMode === 'liquid') {
-        setPreviewUrl('https://wowstore.live');
-      } else {
-        setPreviewUrl('https://wowstore-live-e73ceb638e20e1167a63.o2.myshopify.dev');
-      }
+      const oldBaseUrl = prev === 'liquid'
+        ? 'https://wowstore.live'
+        : 'https://wowstore-live-e73ceb638e20e1167a63.o2.myshopify.dev';
+      const newBaseUrl = newMode === 'liquid'
+        ? 'https://wowstore.live'
+        : 'https://wowstore-live-e73ceb638e20e1167a63.o2.myshopify.dev';
+
+      // Preserve the current path when switching modes
+      setPreviewUrl(currentUrl => {
+        const path = currentUrl.replace(oldBaseUrl, '');
+        return `${newBaseUrl}${path}`;
+      });
       return newMode;
     });
   }, []);

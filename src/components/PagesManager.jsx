@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { cmsAPI } from '../lib/api';
 import { RichTextEditor } from './RichTextEditor';
 import { PageBuilder } from './PageBuilder';
@@ -25,6 +25,14 @@ export const PagesManager = () => {
 
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Auto-open template selector when navigating to /pages/new
+  useEffect(() => {
+    if (location.pathname === '/pages/new') {
+      setShowTemplateSelector(true);
+    }
+  }, [location.pathname]);
 
   const { data: pages = [], isLoading } = useQuery({
     queryKey: ['pages'],
@@ -426,7 +434,13 @@ export const PagesManager = () => {
       {/* Template Selector Modal */}
       <TemplateSelector
         isOpen={showTemplateSelector}
-        onClose={() => setShowTemplateSelector(false)}
+        onClose={() => {
+          setShowTemplateSelector(false);
+          // Navigate back to /pages if we came from /pages/new
+          if (location.pathname === '/pages/new') {
+            navigate('/pages');
+          }
+        }}
         onSelect={handleTemplateSelect}
       />
     </div>

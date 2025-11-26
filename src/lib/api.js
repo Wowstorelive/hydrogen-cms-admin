@@ -21,13 +21,38 @@ apiClient.interceptors.response.use(
 );
 
 export const cmsAPI = {
-  // Pages now pull from GitHub Hydrogen repository
-  pages: githubAPI.pages,
+  // Pages stored in database (with GitHub path reference)
+  pages: {
+    getAll: () => apiClient.get('/cms_pages?order=updated_at.desc'),
+    getById: (id) => apiClient.get(`/cms_pages?id=eq.${id}`),
+    getBySlug: (slug) => apiClient.get(`/cms_pages?slug=eq.${slug}`),
+    create: (data) => apiClient.post('/cms_pages', data, {
+      headers: { 'Prefer': 'return=representation' }
+    }),
+    update: (id, data) => apiClient.patch(`/cms_pages?id=eq.${id}`, data, {
+      headers: { 'Prefer': 'return=representation' }
+    }),
+    delete: (id) => apiClient.delete(`/cms_pages?id=eq.${id}`),
+  },
+  // GitHub API for direct repository access (optional)
+  github: githubAPI.pages,
   media: {
     getAll: () => apiClient.get('/cms_media?order=created_at.desc'),
   },
   components: {
-    getAll: () => apiClient.get('/component_library?select=*,category:component_categories(*)&is_active=eq.true&order=name.asc'),
+    getAll: async () => {
+      const response = await apiClient.get('/component_library?select=*,category:component_categories(id,name,slug)&is_active=eq.true&order=name.asc');
+      // Flatten category data for easier access
+      if (response.data) {
+        response.data = response.data.map(comp => ({
+          ...comp,
+          category_name: comp.category?.name || 'Uncategorized',
+          category_slug: comp.category?.slug || 'other',
+          avg_conversion_lift: comp.conversion_lift_percentage || 0,
+        }));
+      }
+      return response;
+    },
     getBySlug: (slug) => apiClient.get(`/component_library?slug=eq.${slug}&select=*,category:component_categories(*)`),
     getByCategory: (categoryId) => apiClient.get(`/component_library?category_id=eq.${categoryId}&is_active=eq.true&select=*,category:component_categories(*)`),
   },

@@ -39,6 +39,7 @@ const App = () => {
 
             {/* Pages */}
             <Route path="/pages" element={<PagesManager />} />
+            <Route path="/pages/new" element={<PagesManager />} />
             <Route path="/pages/:pageId/edit" element={<PageEditor />} />
 
             {/* Components */}
@@ -58,6 +59,7 @@ const App = () => {
             <Route path="/workflows" element={<WorkflowOrchestration />} />
 
             {/* Settings */}
+            <Route path="/settings" element={<Navigate to="/settings/github" replace />} />
             <Route path="/settings/github" element={<GitHubSettings />} />
 
             {/* Catch all - redirect to dashboard */}

@@ -27,8 +27,8 @@ export function CMSSidebar({ onNewPage }) {
       icon: FileText,
       href: '/pages',
       children: [
-        { id: 'all-pages', label: 'All Pages', href: '/pages' },
-        { id: 'new-page', label: 'Create New', href: '/pages/new' },
+        { id: 'all-pages', label: 'All Pages', href: '/pages', exact: true },
+        { id: 'new-page', label: 'Create New', href: '/pages/new', exact: true },
       ],
     },
     {
