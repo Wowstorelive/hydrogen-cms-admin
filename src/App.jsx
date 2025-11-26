@@ -10,6 +10,7 @@ import { PageEditor } from './components/pages/PageEditor';
 import ComponentLibrary from './components/ComponentLibrary';
 import FunnelManager from './components/FunnelManager';
 import { FunnelVisualBuilder } from './components/funnels/FunnelVisualBuilder';
+import { FunnelStageEditor } from './components/funnels/FunnelStageEditor';
 import InitiativeManager from './components/InitiativeManager';
 import SDGLibrary from './components/SDGLibrary';
 import WorkflowOrchestration from './components/WorkflowOrchestration';
@@ -48,6 +49,7 @@ const App = () => {
             {/* Funnels */}
             <Route path="/funnels" element={<FunnelManager />} />
             <Route path="/funnels/:funnelId/visual" element={<FunnelVisualBuilder />} />
+            <Route path="/funnels/:funnelId/stages/:stageId/edit" element={<FunnelStageEditor />} />
 
             {/* Initiatives */}
             <Route path="/initiatives" element={<InitiativeManager />} />

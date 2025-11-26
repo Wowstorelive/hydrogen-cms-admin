@@ -95,6 +95,8 @@ export const cmsAPI = {
     delete: (id) => apiClient.delete(`/funnels?id=eq.${id}`)
   },
   funnelStages: {
+    getById: (id) => apiClient.get(`/funnel_stages?id=eq.${id}&select=*`),
+    getByFunnelId: (funnelId) => apiClient.get(`/funnel_stages?funnel_id=eq.${funnelId}&order=sort_order.asc`),
     create: (data) => apiClient.post('/funnel_stages', data, {
       headers: { 'Prefer': 'return=representation' }
     }),
@@ -104,7 +106,11 @@ export const cmsAPI = {
     delete: (id) => apiClient.delete(`/funnel_stages?id=eq.${id}`)
   },
   funnelStageComponents: {
+    getByStageId: (stageId) => apiClient.get(`/funnel_stage_components?stage_id=eq.${stageId}&select=*,component:component_library(id,name,slug,description,category:component_categories(id,name))&order=sort_order.asc`),
     create: (data) => apiClient.post('/funnel_stage_components', data, {
+      headers: { 'Prefer': 'return=representation' }
+    }),
+    update: (id, data) => apiClient.patch(`/funnel_stage_components?id=eq.${id}`, data, {
       headers: { 'Prefer': 'return=representation' }
     }),
     delete: (id) => apiClient.delete(`/funnel_stage_components?id=eq.${id}`)
