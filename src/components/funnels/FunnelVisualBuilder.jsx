@@ -3,10 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { cmsAPI } from '../../lib/api';
 import { PreviewPane } from '../preview/PreviewPane';
+import { FunnelPageGenerator } from './FunnelPageGenerator';
+import { FunnelAnalytics } from './FunnelAnalytics';
 import toast from 'react-hot-toast';
 import {
   ArrowRight, Eye, Edit, TrendingUp, TrendingDown,
-  Users, Target, Zap, CheckCircle, Save, ArrowLeft, Play
+  Users, Target, Zap, CheckCircle, Save, ArrowLeft, Play,
+  FileText, Sparkles, BarChart3
 } from 'lucide-react';
 
 /**
@@ -257,6 +260,8 @@ export function FunnelVisualBuilder() {
   const [selectedStageIndex, setSelectedStageIndex] = useState(0);
   const [viewMode, setViewMode] = useState('desktop');
   const [showPreview, setShowPreview] = useState(false);
+  const [showPageGenerator, setShowPageGenerator] = useState(false);
+  const [activeTab, setActiveTab] = useState('stages'); // 'stages' or 'analytics'
 
   // Fetch funnel details
   const { data: funnel, isLoading: funnelLoading } = useQuery({
@@ -355,9 +360,42 @@ export function FunnelVisualBuilder() {
                 {stages.length} stages • {funnel.target_audience}
               </p>
             </div>
+
+            {/* Tabs */}
+            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 ml-6">
+              <button
+                onClick={() => setActiveTab('stages')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition ${
+                  activeTab === 'stages'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Zap className="w-4 h-4" />
+                Stages
+              </button>
+              <button
+                onClick={() => setActiveTab('analytics')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition ${
+                  activeTab === 'analytics'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <BarChart3 className="w-4 h-4" />
+                Analytics
+              </button>
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowPageGenerator(true)}
+              className="flex items-center gap-2 px-4 py-2 border border-purple-300 text-purple-700 rounded-lg hover:bg-purple-50 transition"
+            >
+              <Sparkles className="w-4 h-4" />
+              Generate Pages
+            </button>
             <button
               onClick={handleTestFunnel}
               className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
@@ -377,6 +415,12 @@ export function FunnelVisualBuilder() {
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden flex">
+        {activeTab === 'analytics' ? (
+          <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
+            <FunnelAnalytics funnelId={funnelId} />
+          </div>
+        ) : (
+        <>
         {/* Left: Stages Grid */}
         <div className="w-1/3 bg-gray-50 border-r overflow-y-auto p-6">
           <div className="space-y-4">
@@ -438,7 +482,22 @@ export function FunnelVisualBuilder() {
             </div>
           )}
         </div>
+        </>
+        )}
       </div>
+
+      {/* Page Generator Modal */}
+      {showPageGenerator && funnel && (
+        <FunnelPageGenerator
+          funnel={funnel}
+          stages={stages}
+          onClose={() => setShowPageGenerator(false)}
+          onSuccess={() => {
+            queryClient.invalidateQueries(['pages']);
+            toast.success('Pages generated! Check the Pages section.');
+          }}
+        />
+      )}
     </div>
   );
 }
