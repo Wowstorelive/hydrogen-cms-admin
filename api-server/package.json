@@ -1,0 +1,17 @@
+{
+  "name": "cms-api-server",
+  "version": "1.0.0",
+  "description": "CMS Backend API for OAuth and other server-side operations",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "node-fetch": "^2.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
